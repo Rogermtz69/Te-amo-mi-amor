@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Te amo mi amor</title>
+  <style>
+    :root {
+      --bg-color: #05041a;
+      --text-color: #fff4d9;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      background: var(--bg-color);
+      overflow: hidden;
+      font-family: "Helvetica Neue", Arial, sans-serif;
+    }
+
+    #scene {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      z-index: 0;
+    }
+
+    .overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      z-index: 5;
+      pointer-events: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 16px;
+      text-align: center;
+    }
+
+    .message {
+      color: var(--text-color);
+      font-size: clamp(26px, 5vw, 56px);
+      text-transform: lowercase;
+      letter-spacing: 1px;
+      text-shadow:
+        0 2px 8px rgba(0,0,0,0.6),
+        0 0 18px rgba(255,220,120,0.15);
+      margin-top: 6vh;
+      font-weight: 700;
+    }
+
+    .flowers {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 28vh;
+      z-index: 4;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      pointer-events: none;
+      gap: 8px;
+    }
+
+    .flower-wrap {
+      transform-origin: center bottom;
+      will-change: transform, opacity;
+    }
+
+    @media (max-width: 520px) {
+      .message { font-size: clamp(20px, 7vw, 40px); margin-top: 4vh; }
+      .flowers { height: 32vh; }
+    }
+  </style>
+</head>
+<body>
+  <div class="overlay">
+    <h1 class="message">te amo mi amor</h1>
+  </div>
+
+  <canvas id="scene"></canvas>
+
+  <svg id="flower-template" width="0" height="0" style="position:absolute;left:-9999px;">
+    <defs>
+      <g id="flower">
+        <ellipse cx="0" cy="-12" rx="8" ry="18" fill="#ffd23f" />
+        <ellipse cx="12" cy="0" rx="8" ry="18" transform="rotate(60)" fill="#ffd23f" />
+        <ellipse cx="-12" cy="0" rx="8" ry="18" transform="rotate(-60)" fill="#ffd23f" />
+        <ellipse cx="0" cy="12" rx="8" ry="18" transform="rotate(180)" fill="#ffd23f" />
+        <ellipse cx="20" cy="0" rx="8" ry="18" transform="rotate(30)" fill="#ffd23f" />
+        <ellipse cx="-20" cy="0" rx="8" ry="18" transform="rotate(-30)" fill="#ffd23f" />
+        <circle cx="0" cy="0" r="8" fill="#ff8f3b" />
+      </g>
+    </defs>
+  </svg>
+
+  <script>
+    const canvas = document.getElementById('scene');
+    const ctx = canvas.getContext('2d');
+    let W = canvas.width = innerWidth;
+    let H = canvas.height = innerHeight;
+
+    const stars = [];
+    const STAR_COUNT = Math.floor((W * H) / 6000);
+    for (let i = 0; i < STAR_COUNT; i++) {
+      stars.push({
+        x: Math.random() * W,
+        y: Math.random() * H,
+        r: Math.random() * 1.2 + 0.3,
+        a: Math.random() * 0.7 + 0.3,
+        twinkle: Math.random() * 0.02 + 0.005
+      });
+    }
+
+    const comets = [];
+    const MAX_COMETS = 3;
+
+    function spawnComet() {
+      const fromTop = Math.random() < 0.5;
+      const startX = Math.random() * W;
+      const startY = fromTop ? -50 : Math.random() * (H/2);
+      const vx = (Math.random() * 3 + 4) * (Math.random() < 0.5 ? -1 : 1);
+      const vy = Math.random() * 2 + 2;
+      const length = Math.random() * 120 + 80;
+      comets.push({x:startX,y:startY,vx,vy,life:0,maxLife:Math.random()*240+160,length,hue:210+Math.random()*40});
+    }
+
+    function placeFlowers() {
+      const svgTemplate = document.getElementById('flower-template');
+      const wrap = document.createElement('div');
+      wrap.className = 'flowers';
+      document.body.appendChild(wrap);
+
+      const count = Math.max(6, Math.floor(W / 100));
+      for (let i = 0; i < count; i++) {
+        const fw = document.createElement('div');
+        fw.className = 'flower-wrap';
+        const scale = 0.9 + Math.random() * 1.2;
+        fw.style.transform = `scale(${scale}) translateY(${Math.random()*8}px) rotate(${(Math.random()-0.5)*10}deg)`;
+        fw.style.opacity = 0.9 - Math.random()*0.25;
+
+        const svgNs = "http://www.w3.org/2000/svg";
+        const s = document.createElementNS(svgNs, 'svg');
+        s.setAttribute('width', 54 * scale);
+        s.setAttribute('height', 54 * scale);
+        s.setAttribute('viewBox', '-30 -30 60 60');
+        const use = document.createElementNS(svgNs, 'use');
+        use.setAttributeNS('http://www.w3.org/1999/xlink', 'href', '#flower');
+        s.appendChild(use);
+        fw.appendChild(s);
+
+        const delay = Math.random() * 2000;
+        fw.animate([
+          { transform: `scale(${scale}) translateY(0px) rotate(${(Math.random()-0.5)*10}deg)` },
+          { transform: `scale(${scale}) translateY(${6 + Math.random()*6}px) rotate(${(Math.random()-0.5)*10 + 3}deg)` },
+          { transform: `scale(${scale}) translateY(0px) rotate(${(Math.random()-0.5)*10}deg)` }
+        ], { duration: 4000 + Math.random()*3000, delay, iterations: Infinity, easing: 'ease-in-out' });
+
+        wrap.appendChild(fw);
+      }
+    }
+
+    function drawBackground() {
+      const g = ctx.createLinearGradient(0, 0, 0, H);
+      g.addColorStop(0, '#03102a');
+      g.addColorStop(0.5, '#05041a');
+      g.addColorStop(1, '#09111b');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = 'rgba(4,8,20,0.25)';
+      ctx.fillRect(0, H * 0.72, W, H * 0.28);
+    }
+
+    function drawStars() {
+      for (const s of stars) {
+        s.a += Math.sin(Date.now() * 0.001 + s.x) * s.twinkle;
+        ctx.beginPath();
+        ctx.fillStyle = `rgba(255, 255, 255, ${Math.max(0.05, Math.min(1, s.a))})`;
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI*2);
+        ctx.fill();
+      }
+    }
+
+    function drawComets() {
+      for (let i = comets.length - 1; i >= 0; i--) {
+        const c = comets[i];
+        c.life++;
+        c.x += c.vx;
+        c.y += c.vy;
+        const tailX = c.x - c.vx * c.length / 8;
+        const tailY = c.y - c.vy * c.length / 8;
+        const alpha = 1 - c.life / c.maxLife;
+
+        const grad = ctx.createLinearGradient(tailX, tailY, c.x, c.y);
+        grad.addColorStop(0, `rgba(255, 220, 120, 0)`);
+        grad.addColorStop(0.6, `rgba(255, 200, 120, ${0.25 * alpha})`);
+        grad.addColorStop(1, `rgba(255, 240, 200, ${0.9 * alpha})`);
+
+        ctx.strokeStyle = grad;
+        ctx.lineWidth = Math.max(1, c.length / 24);
+        ctx.beginPath();
+        ctx.moveTo(tailX, tailY);
+        ctx.lineTo(c.x, c.y);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.fillStyle = `rgba(255, 245, 220, ${alpha})`;
+        ctx.arc(c.x, c.y, 3 + (1 - alpha) * 3, 0, Math.PI*2);
+        ctx.fill();
+
+        if (c.life > c.maxLife || c.x < -200 || c.x > W + 200 || c.y > H + 200) {
+          comets.splice(i, 1);
+        }
+      }
+    }
+
+    function drawMoonGlow() {
+      const mx = W * 0.85;
+      const my = H * 0.18;
+      const r = Math.min(W, H) * 0.12;
+      const g = ctx.createRadialGradient(mx, my, 10, mx, my, r);
+      g.addColorStop(0, 'rgba(255,245,220,0.06)');
+      g.addColorStop(1, 'rgba(5,6,10,0)');
+      ctx.fillStyle = g;
+      ctx.fillRect(mx - r, my - r, r * 2, r * 2);
+    }
+
+    function animate() {
+      ctx.clearRect(0,0,W,H);
+      drawBackground();
+      drawStars();
+      drawComets();
+      drawMoonGlow();
+      requestAnimationFrame(animate);
+    }
+
+    function onResize() {
+      W = canvas.width = innerWidth;
+      H = canvas.height = innerHeight;
+    }
+    addEventListener('resize', onResize);
+
+    (function init() {
+      placeFlowers();
+      animate();
+      setInterval(() => {
+        if (comets.length < MAX_COMETS && Math.random() < 0.7) spawnComet();
+      }, 900);
+      spawnComet();
+      if (Math.random() > 0.5) setTimeout(spawnComet, 800 + Math.random()*1400);
+    })();
+  </script>
+</body>
+</html>
